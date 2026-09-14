@@ -47,7 +47,7 @@
     <Type Value="RunAndDesignTime"/>
     <RequiredPkgs Count="5">
       <Item1>
-        <PackageName Value="pl_indy"/>
+        <PackageName Value="indylaz"/>
       </Item1>
       <Item2>
         <PackageName Value="IDEIntf"/>
@@ -56,7 +56,7 @@
         <PackageName Value="pltis_utils"/>
       </Item3>
       <Item4>
-        <PackageName Value="pl_virtualtrees"/>
+        <PackageName Value="pltis_virtualtrees"/>
       </Item4>
       <Item5>
         <PackageName Value="pltis_superobject"/>
