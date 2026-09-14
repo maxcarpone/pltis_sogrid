@@ -468,9 +468,18 @@ type
     RowData, CellData: ISuperObject; Column: TColumnIndex; TextType: TVSTTextType;
     var CellText: string) of object;
 
+  TSOGridNodesEvent = procedure(Sender: TSOGrid; Nodes: ISuperObject) of object;
+  TSOGridBeforePasteEvent = function(Sender: TSOGrid; Row: ISuperObject): Boolean of object;
+  TSOGridSOCompareNodesEvent = procedure(Sender: TSOGrid; Node1, Node2: ISuperObject;
+    const Columns: array of String; var Result: Integer) of object;
+
   TSOGrid = class(TCustomVirtualStringTree,ISODataView)
   private
     FOnCutToClipBoard: TNotifyEvent;
+    FOnNodesDelete: TSOGridNodesEvent;
+    FOnBeforePaste: TSOGridBeforePasteEvent;
+    FOnSOCompareNodes: TSOGridSOCompareNodesEvent;
+    FKeyFieldsNames: String;
     FShowAdavancedColumnsCustomize: Boolean;
     FShowAdvancedColumnsCustomize: Boolean;
     FTextFound: boolean;
@@ -602,6 +611,7 @@ type
     destructor Destroy; override;
     function GetNodeSOData(Node: PVirtualNode): ISuperObject;
     procedure LoadData;
+    procedure DeleteRows(SOArray: ISuperObject);
     property Data: ISuperObject read GetData write SetData;
     function GetCellData(N: PVirtualNode; FieldName: string;
       Default: ISuperObject = nil): ISuperObject;
@@ -639,6 +649,10 @@ type
 
   published
     property OnGetText: TSOGridGetText read FOnGetText write FOnGetText;
+    property OnNodesDelete: TSOGridNodesEvent read FOnNodesDelete write FOnNodesDelete;
+    property OnBeforePaste: TSOGridBeforePasteEvent read FOnBeforePaste write FOnBeforePaste;
+    property OnSOCompareNodes: TSOGridSOCompareNodesEvent read FOnSOCompareNodes write FOnSOCompareNodes;
+    property KeyFieldsNames: String read FKeyFieldsNames write FKeyFieldsNames;
     property Datasource: TSODataSource read FDataSource write SetDatasource;
 
     property OnCutToClipBoard: TNotifyEvent read FOnCutToClipBoard write SetOnCutToClipBoard;
@@ -1079,7 +1093,7 @@ end;
 function TSOConnection.LoadData(provider: String; Params: ISuperObject; root:String = 'content'): ISuperObject;
 var
   args,res,par:String;
-  pathargs:TDynStringArray;
+  pathargs:TStringArray;
   response:ISuperObject;
 begin
   pathargs := StrSplit(provider,'/');
@@ -2636,6 +2650,7 @@ function TSOGrid.DoCompare(Node1, Node2: PVirtualNode; Column: TColumnIndex): in
 var
   n1, n2, d1, d2: ISuperObject;
   propname: string;
+  columns: TStringArray;
   compresult : TSuperCompareResult;
 begin
   Result := 0;
@@ -2658,15 +2673,22 @@ begin
 
   if result = 0 then
   begin
-    if Assigned(OnCompareNodes) then
+    if n1 = Nil then
+      n1 := GetNodeSOData(Node1);
+    if n2 = Nil then
+      n2 := GetNodeSOData(Node2);
+
+    if Assigned(FOnSOCompareNodes) and (Column >= 0) and
+      (n1 <> nil) and (n2 <> nil) then
+    begin
+      propname := TSOGridColumn(Header.Columns[column]).PropertyName;
+      columns := StrSplit(propname, ';');
+      FOnSOCompareNodes(Self, n1, n2, columns, Result);
+    end
+    else if Assigned(OnCompareNodes) then
       OnCompareNodes(Self, Node1, Node2, Column, Result)
     else
     begin
-      if n1 = Nil then
-        n1 := GetNodeSOData(Node1);
-      if n2 = Nil then
-        n2 := GetNodeSOData(Node2);
-
       if (Column >= 0) and (n1 <> nil) and (n2 <> nil) then
       begin
         propname := TSOGridColumn(Header.Columns[column]).PropertyName;
@@ -2844,6 +2866,34 @@ begin
     FOnCutToClipBoard(Sender);
 end;
 
+procedure TSOGrid.DeleteRows(SOArray: ISuperObject);
+var
+  sel: ISuperObject;
+  i: integer;
+  nodes: TNodeArray;
+begin
+  if SOArray = Nil then
+    Exit;
+
+  for sel in SOArray do
+  begin
+    nodes := NodesForData(sel);
+
+    if Assigned(Datasource) then
+      Datasource.DeleteRecord(sel)
+    else
+      for i := Data.AsArray.Length - 1 downto 0 do
+        if Data.AsArray[i] = sel then
+        begin
+          Data.AsArray.Delete(i);
+          Break;
+        end;
+
+    if Length(nodes) > 0 then
+      DeleteNode(nodes[0]);
+  end;
+end;
+
 procedure TSOGrid.DoDeleteRows(Sender: TObject);
 var
   sel, todelete: ISuperObject;
@@ -2863,6 +2913,9 @@ begin
     newFocusedNode := Nil;
     if todelete.AsArray.Length>0 then
     begin
+      if Assigned(FOnNodesDelete) then
+        FOnNodesDelete(Self, todelete);
+
       nodes := NodesForData(todelete.AsArray[0]);
       if length(nodes)>0 then
         newFocusedNode := nodes[0];
@@ -2906,6 +2959,10 @@ begin
     Datasource.Enabled:=false;
   try
     for row in ClipboardSOData do
+    begin
+      if Assigned(FOnBeforePaste) and not FOnBeforePaste(Self, row) then
+        Continue;
+
       if Assigned(Datasource) then
         Datasource.AppendRecord(row)
       else
@@ -2913,6 +2970,7 @@ begin
         Data.AsArray.Add(row);
         LoadData;
       end;
+    end;
   finally
     if Assigned(Datasource) then
       Datasource.Enabled:=true;
@@ -3950,7 +4008,7 @@ end;
 procedure TSOStringEditLink.SetBounds(R: TRect); stdcall;
 // Sets the outer bounds of the edit control and the actual edit area in the control.
 var
-  Offset: Integer;
+  LOffset: Integer;
 begin
   if not FStopping then
   begin
@@ -3975,10 +4033,10 @@ begin
       // We have to take out the two pixel border of the edit control as well as a one pixel "edit border" the
       // control leaves around the (selected) text.
       R := FEdit.ClientRect;
-      Offset := 2;
+      LOffset := 2;
       {if tsUseThemes in FTree.FStates then
-        Inc(Offset);}
-      InflateRect(R, -FTree.TextMargin + Offset, Offset);
+        Inc(LOffset);}
+      InflateRect(R, -FTree.TextMargin + LOffset, LOffset);
       if not (vsMultiline in FNode^.States) then
         OffsetRect(R, 0, FTextBounds.Top - FEdit.Top);
 
