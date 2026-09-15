@@ -2248,17 +2248,31 @@ var
   Node: PVirtualNode;
   Focused: ISuperObject;
   nodes:TNodeArray;
+  PrevReadOnly: Boolean;
 begin
   if (Data = nil) or (Data.AsArray = nil) then
-    inherited Clear
+  begin
+    PrevReadOnly := toReadOnly in TreeOptions.MiscOptions;
+    TreeOptions.MiscOptions := TreeOptions.MiscOptions - [toReadOnly];
+    inherited Clear;
+    if PrevReadOnly then
+      TreeOptions.MiscOptions := TreeOptions.MiscOptions + [toReadOnly];
+  end
   else
   begin
     //todo handle object
     Focused := FocusedRow;
     BeginUpdate;
     try
-      inherited Clear;
-      RootNodeCount := Data.AsArray.Length;
+      PrevReadOnly := toReadOnly in TreeOptions.MiscOptions;
+      TreeOptions.MiscOptions := TreeOptions.MiscOptions - [toReadOnly];
+      try
+        inherited Clear;
+        RootNodeCount := Data.AsArray.Length;
+      finally
+        if PrevReadOnly then
+          TreeOptions.MiscOptions := TreeOptions.MiscOptions + [toReadOnly];
+      end;
     finally
       EndUpdate;
       if Focused <> Nil then
