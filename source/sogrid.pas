@@ -163,15 +163,15 @@ type
 
   ISORowChanges = interface(IInterfaceList)
     ['{310B128D-2751-4860-BC15-2F1AA1A0B2B7}']
-    function Get(i : Integer) : ISORowChange;
+    function GetRowChange(i : Integer) : ISORowChange;
     function GetDataSource: TSODataSource;
-    procedure Put(i : Integer;item : ISORowChange);
+    procedure PutRowChange(i : Integer;item : ISORowChange);
     function GetEnumerator: TSORowChangesEnumerator;
 
     //associated datasource for flatten operations
     property Datasource:TSODataSource read GetDataSource;
     //overriden to return proper interface
-    property Items[Index : Integer] : ISORowChange read Get write Put;default;
+    property Items[Index : Integer] : ISORowChange read GetRowChange write PutRowChange;default;
     //Add a new change to the list
     function AddChange(UpdateType:TSOUpdateStatus;Row:ISuperObject=nil;OldValues:ISuperObject=Nil;NewValues:ISuperObject=Nil):integer;
     // Create a new list of changes grouping all changes of each row into one delta
@@ -200,9 +200,9 @@ type
   TSORowChanges = class(TInterfaceList,ISORowChanges)
   private
     Fdatasource:TSODataSource;
-    function Get(i : Integer) : ISORowChange;
+    function GetRowChange(i : Integer) : ISORowChange;
     function GetDataSource: TSODataSource;
-    procedure Put(i : Integer;item : ISORowChange);
+    procedure PutRowChange(i : Integer;item : ISORowChange);
 
   public
     constructor Create(adatasource:TSODatasource);
@@ -222,7 +222,7 @@ type
     procedure RemoveRowChanges(row:ISuperObject);
 
     property Datasource:TSODataSource read GetDataSource;
-    property Items[Index : Integer] : ISORowChange read Get write Put;default;
+    property Items[Index : Integer] : ISORowChange read GetRowChange write PutRowChange;default;
 
   end;
 
@@ -1238,7 +1238,7 @@ begin
   end;
 end;
 
-function TSORowChanges.Get(i: Integer): ISORowChange;
+function TSORowChanges.GetRowChange(i: Integer): ISORowChange;
 begin
   result := inherited Get(i) as ISORowChange;
 end;
@@ -1248,7 +1248,7 @@ begin
   Result := Fdatasource;
 end;
 
-procedure TSORowChanges.Put(i: Integer; item: ISORowChange);
+procedure TSORowChanges.PutRowChange(i: Integer; item: ISORowChange);
 begin
   inherited Put(i,item);
 end;
