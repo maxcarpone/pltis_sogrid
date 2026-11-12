@@ -501,14 +501,14 @@ type
 
     FDefaultPopupMenu: TPopupMenu;
     FMenuFilled: boolean;
-    HMUndo, HMRevert: HMENU;
-    HMFind, HMFindNext, HMReplace: HMENU;
-    HMCut, HMCopy, HMCopyCell, HMPast, HMFindReplace: HMENU;
-    HMInsert, HMDelete, HMSelAll: HMENU;
-    HMExcel, HMPrint: HMENU;
-    HMCollAll, HMExpAll: HMENU;
-    HMCustomize: HMENU;
-    HMAdvancedCustomize: HMENU;
+    HMUndo, HMRevert: TMenuItem;
+    HMFind, HMFindNext, HMReplace: TMenuItem;
+    HMCut, HMCopy, HMCopyCell, HMPast, HMFindReplace: TMenuItem;
+    HMInsert, HMDelete, HMSelAll: TMenuItem;
+    HMExcel, HMPrint: TMenuItem;
+    HMCollAll, HMExpAll: TMenuItem;
+    HMCustomize: TMenuItem;
+    HMAdvancedCustomize: TMenuItem;
 
     function FocusedPropertyName: String;
     function GetData: ISuperObject;
@@ -2493,7 +2493,7 @@ end;
 
 procedure TSOGrid.FillMenu(LocalMenu: TPopupMenu);
 
-  function AddItem(ACaption: string; AShortcut: TShortCut; AEvent: TNotifyEvent): HMENU;
+  function AddItem(ACaption: string; AShortcut: TShortCut; AEvent: TNotifyEvent): TMenuItem;
   var
     AMI: TMenuItem;
   begin
@@ -2505,7 +2505,7 @@ procedure TSOGrid.FillMenu(LocalMenu: TPopupMenu);
       OnClick := AEvent;
     end;
     LocalMenu.Items.Add(AMI);
-    Result := AMI.Handle;
+    Result := AMI;
   end;
 
 begin
@@ -2517,10 +2517,10 @@ begin
 
       if Assigned(FDatasource) then
       begin
-        if (HMUndo = 0) then
+        if (HMUndo = nil) then
           HMUndo := AddItem(GSConst_UndoLastUpdate, ShortCut(Ord('Z'), [ssCtrl]),
             DoUndoLastUpdate);
-        if (HMRevert = 0) then
+        if (HMRevert = nil) then
           HMRevert := AddItem(GSConst_RevertRecord, 0, DoRevertRecord);
         AddItem('-', 0, nil);
       end;
