@@ -360,9 +360,12 @@ type
   private
     FPropertyName: string;
     procedure SetPropertyName(const Value: string);
+    function GetTitle: TCaption;
+    procedure SetTitle(AValue: TCaption);
   public
     procedure Assign(Source: TPersistent); override;
   published
+    property Text: TCaption read GetTitle write SetTitle;
     property PropertyName: string read FPropertyName write SetPropertyName;
   end;
 
@@ -1914,6 +1917,16 @@ end;
 
 
 { TSOGridColumn }
+function TSOGridColumn.GetTitle: TCaption;
+begin
+  Result := GetText();
+end;
+
+procedure TSOGridColumn.SetTitle(AValue: TCaption);
+begin
+  SetText(AValue);
+end;
+
 procedure TSOGridColumn.SetPropertyName(const Value: string);
 begin
   if FPropertyName = Value then
