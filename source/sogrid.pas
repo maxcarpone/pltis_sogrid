@@ -3514,7 +3514,7 @@ begin
   for i:=0 to Header.Columns.Count-1 do
   begin
     if coVisible in Header.Columns[i].Options then
-      values.AsArray.Add('"'+UTF8Decode(TSOGridColumn(Header.Columns[i]).Text)+'"');
+      values.AsArray.Add(UTF8Decode(AnsiQuotedStr(TSOGridColumn(Header.Columns[i]).Text, '"')));
   end;
   Result := Result+Join(Separator,values)+LineEnding;
   for row in rows do
@@ -3525,8 +3525,8 @@ begin
       if coVisible in Header.Columns[i].Options then
       begin
         value := Row[TSOGridColumn(Header.Columns[i]).PropertyName];
-        if value<>Nil then
-          values.AsArray.Add(value.AsString)
+        if (value <> Nil) and not ObjectIsNull(value) then
+          values.AsArray.Add(UTF8Decode(AnsiQuotedStr(UTF8Encode(value.AsString), '"')))
         else
           values.AsArray.Add('""');
       end;
