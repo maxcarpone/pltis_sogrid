@@ -3584,12 +3584,12 @@ begin
         begin
           PropertyName:=TSOGridColumn(Header.Columns.Items[Column]).PropertyName;
           if FDatasource<>Nil then
-            FDatasource.UpdateValue(RowData,PropertyName,SO('"'+UTF8Decode(AText)+'"'))
+            FDatasource.UpdateValue(RowData,PropertyName,TSuperObject.Create(UTF8Decode(AText)))
           else
           //standalone grid
           begin
             OldCelldata := RowData[PropertyName];
-            NewCellData := SO('"'+UTF8Decode(AText)+'"');
+            NewCellData := TSuperObject.Create(UTF8Decode(AText));
             RowData[PropertyName] := NewCellData;
           end
         end
@@ -3597,7 +3597,7 @@ begin
         begin
           PropertyName:=DefaultText;
           OldCelldata := RowData[DefaultText];
-          NewCellData := SO(UTF8Decode(AText));
+          NewCellData := TSuperObject.Create(UTF8Decode(AText));
           RowData[DefaultText] := NewCellData;
         end;
       end;
